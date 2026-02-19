@@ -2,50 +2,53 @@ import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import FacebookProvider from 'next-auth/providers/facebook';
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [
+const googleId = process.env.GOOGLE_CLIENT_ID;
+const googleSecret = process.env.GOOGLE_CLIENT_SECRET;
+const facebookId = process.env.FACEBOOK_APP_ID;
+const facebookSecret = process.env.FACEBOOK_APP_SECRET;
+
+// Only add providers if they have valid credentials
+const providers: any[] = [];
+
+if (googleId && googleSecret && !googleId.startsWith('your_') && !googleSecret.startsWith('your_')) {
+  providers.push(
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-      allowDangerousEmailAccountLinking: true,
-    }),
+      clientId: googleId,
+      clientSecret: googleSecret,
+    })
+  );
+}
+
+if (facebookId && facebookSecret && !facebookId.startsWith('your_') && !facebookSecret.startsWith('your_')) {
+  providers.push(
     FacebookProvider({
-      clientId: process.env.FACEBOOK_APP_ID || '',
-      clientSecret: process.env.FACEBOOK_APP_SECRET || '',
-      allowDangerousEmailAccountLinking: true,
-    }),
-  ],
+      clientId: facebookId,
+      clientSecret: facebookSecret,
+    })
+  );
+}
+
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  providers,
   pages: {
     signIn: '/login',
-    error: '/login?error=auth_error',
+    error: '/login?error=auth',
+  },
+  session: {
+    strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.image = user.image;
-        if (account) {
-          token.provider = account.provider;
-        }
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: any) {
       if (session.user) {
-        (session.user as any).id = token.id as string;
-        (session.user as any).provider = token.provider as string;
+        session.user.id = token.id as string;
       }
       return session;
     },
   },
-  session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-  jwt: {
-    secret: process.env.NEXTAUTH_SECRET,
-  },
-  debug: process.env.NODE_ENV === 'development',
 });
