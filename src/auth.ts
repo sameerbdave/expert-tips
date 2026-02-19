@@ -1,30 +1,44 @@
-import NextAuth from 'next-auth';
+import NextAuth, { type NextAuthConfig } from 'next-auth';
 import Google from 'next-auth/providers/google';
 import Facebook from 'next-auth/providers/facebook';
 import Credentials from 'next-auth/providers/credentials';
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [
+// Build providers based on environment
+const providers = [
+  Credentials({
+    credentials: {},
+    async authorize() {
+      return {
+        id: String(Date.now()),
+        name: 'Guest User',
+        email: 'guest@example.com',
+      };
+    },
+  }),
+];
+
+// Only add Google if configured
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  providers.push(
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
+    })
+  );
+}
+
+// Only add Facebook if configured  
+if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+  providers.push(
     Facebook({
       clientId: process.env.FACEBOOK_APP_ID,
       clientSecret: process.env.FACEBOOK_APP_SECRET,
-    }),
-    Credentials({
-      credentials: {},
-      async authorize() {
-        // Allow guest login
-        return {
-          id: String(Date.now()),
-          name: 'Guest User',
-          email: 'guest@example.com',
-        };
-      },
-    }),
-  ],
+    })
+  );
+}
+
+const config = {
+  providers,
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: 'jwt',
@@ -35,19 +49,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: '/login',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: any) {
       if (user) {
         token.id = user.id;
-        token.email = user.email;
       }
       return token;
     },
     async session({ session, token }: any) {
-      if (session.user) {
+      if (session.user && token.id) {
         session.user.id = token.id;
-        session.user.email = token.email;
       }
       return session;
     },
   },
-});
+} satisfies NextAuthConfig;
+
+export const { handlers, auth, signIn, signOut } = NextAuth(config);
