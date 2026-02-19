@@ -362,9 +362,10 @@ const CATEGORY_ICONS: { [key: string]: string } = {
   'wellness': '🧘',
 };
 
-export default function CategoryPage({ params }: { params: { category: string } }) {
-  const categoryName = CATEGORY_NAMES[params.category];
-  const categoryIcon = CATEGORY_ICONS[params.category];
+export default async function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
+  const { category } = await params;
+  const categoryName = CATEGORY_NAMES[category];
+  const categoryIcon = CATEGORY_ICONS[category];
   
   // Filter tips by category (normalize the comparison)
   const filteredTips = ALL_TIPS.filter(
