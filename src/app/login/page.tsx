@@ -68,10 +68,10 @@ export default function LoginPage() {
           {/* OAuth Info */}
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800">
-              <strong>Setup Required:</strong> Add Google and Facebook OAuth credentials to <code>.env.local</code> to enable login.
+              <strong>Note:</strong> Using JWT sessions for development. Add OAuth credentials to `.env.local` to enable login.
             </p>
             <p className="text-xs text-blue-600 mt-2">
-              See AUTH_SETUP.md for detailed instructions.
+              See AUTH_SETUP.md for instructions.
             </p>
           </div>
 
