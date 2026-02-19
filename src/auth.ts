@@ -1,16 +1,18 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import FacebookProvider from 'next-auth/providers/facebook';
+import CredentialsProvider from 'next-auth/providers/credentials';
 
-const googleId = process.env.GOOGLE_CLIENT_ID;
-const googleSecret = process.env.GOOGLE_CLIENT_SECRET;
-const facebookId = process.env.FACEBOOK_APP_ID;
-const facebookSecret = process.env.FACEBOOK_APP_SECRET;
+const googleId = process.env.GOOGLE_CLIENT_ID || '';
+const googleSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+const facebookId = process.env.FACEBOOK_APP_ID || '';
+const facebookSecret = process.env.FACEBOOK_APP_SECRET || '';
 
-// Only add providers if they have valid credentials
+// Build providers array
 const providers: any[] = [];
 
-if (googleId && googleSecret && !googleId.startsWith('your_') && !googleSecret.startsWith('your_')) {
+// Add Google if configured properly
+if (googleId && googleSecret && !googleId.includes('your_') && !googleSecret.includes('your_')) {
   providers.push(
     GoogleProvider({
       clientId: googleId,
@@ -19,7 +21,8 @@ if (googleId && googleSecret && !googleId.startsWith('your_') && !googleSecret.s
   );
 }
 
-if (facebookId && facebookSecret && !facebookId.startsWith('your_') && !facebookSecret.startsWith('your_')) {
+// Add Facebook if configured properly
+if (facebookId && facebookSecret && !facebookId.includes('your_') && !facebookSecret.includes('your_')) {
   providers.push(
     FacebookProvider({
       clientId: facebookId,
@@ -27,6 +30,23 @@ if (facebookId && facebookSecret && !facebookId.startsWith('your_') && !facebook
     })
   );
 }
+
+// Always add credentials provider for guest access
+providers.push(
+  CredentialsProvider({
+    name: 'Guest',
+    credentials: {
+      // No credentials needed for guest
+    },
+    async authorize() {
+      return {
+        id: 'guest-' + Math.random().toString(36).substr(2, 9),
+        name: 'Guest User',
+        email: 'guest@example.com',
+      };
+    },
+  })
+);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers,
@@ -36,19 +56,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   session: {
     strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60,
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
       }
       return token;
     },
     async session({ session, token }: any) {
       if (session.user) {
-        session.user.id = token.id as string;
+        session.user.id = token.id;
+        session.user.email = token.email;
       }
       return session;
     },
   },
+  secret: process.env.NEXTAUTH_SECRET,
 });
