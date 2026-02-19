@@ -2,7 +2,6 @@ import TipActions from '@/components/TipActions';
 import CommentSection from '@/components/CommentSection';
 import TipCard from '@/components/TipCard';
 import { ALL_TIPS } from '@/lib/tips-data';
-];
 
 interface TipPageProps {
   params: Promise<{ id: string }>;
