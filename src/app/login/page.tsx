@@ -1,7 +1,7 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -12,6 +12,16 @@ export default function LoginPage() {
   const error = searchParams.get('error');
 
   const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [providers, setProviders] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Check which providers are available
+    const hasGoogle = process.env.NEXT_PUBLIC_GOOGLE_CONFIGURED !== 'false';
+    const hasFacebook = process.env.NEXT_PUBLIC_FACEBOOK_CONFIGURED !== 'false';
+    
+    // For now, assume both are available - they'll be disabled if credentials aren't set
+    setProviders(['google', 'facebook']);
+  }, []);
 
   const handleSignIn = async (provider: string) => {
     setIsLoading(provider);
@@ -49,11 +59,21 @@ export default function LoginPage() {
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-600">
                 {error === 'Callback' 
-                  ? 'Sign in failed. Please try again.' 
+                  ? 'Sign in failed. Please check your OAuth credentials in .env.local' 
                   : 'An error occurred. Please try again.'}
               </p>
             </div>
           )}
+
+          {/* OAuth Info */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Setup Required:</strong> Add Google and Facebook OAuth credentials to <code>.env.local</code> to enable login.
+            </p>
+            <p className="text-xs text-blue-600 mt-2">
+              See AUTH_SETUP.md for detailed instructions.
+            </p>
+          </div>
 
           {/* Sign In Buttons */}
           <div className="space-y-4 mb-8">

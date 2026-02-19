@@ -27,68 +27,66 @@ if (process.env.NODE_ENV === 'development') {
   clientPromise = client.connect();
 }
 
+// Build providers array with only configured providers
+const providers: any[] = [];
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && 
+    !process.env.GOOGLE_CLIENT_ID.includes('your_') &&
+    !process.env.GOOGLE_CLIENT_SECRET.includes('your_')) {
+  providers.push(
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
+    })
+  );
+}
+
+if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET &&
+    !process.env.FACEBOOK_APP_ID.includes('your_') &&
+    !process.env.FACEBOOK_APP_SECRET.includes('your_')) {
+  providers.push(
+    FacebookProvider({
+      clientId: process.env.FACEBOOK_APP_ID,
+      clientSecret: process.env.FACEBOOK_APP_SECRET,
+      allowDangerousEmailAccountLinking: true,
+    })
+  );
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: MongoDBAdapter(clientPromise),
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-      allowDangerousEmailAccountLinking: true,
-    }),
-    FacebookProvider({
-      clientId: process.env.FACEBOOK_APP_ID || '',
-      clientSecret: process.env.FACEBOOK_APP_SECRET || '',
-      allowDangerousEmailAccountLinking: true,
-    }),
-  ],
+  providers: providers.length > 0 ? providers : [],
   pages: {
     signIn: '/login',
-    error: '/login',
+    error: '/login?error=auth_error',
   },
-  callbacks: {
-    async signIn({ user, account, profile, email, credentials }: any) {
-      try {
-        await dbConnect();
-
-        if (account && profile) {
-          const existingUser = await User.findOne({
-            email: user.email,
-          });
-
-          const imageUrl = (() => {
-            if (user.image) return user.image;
-            if (account.provider === 'google' && profile.picture) return profile.picture;
-            if (account.provider === 'facebook' && (profile as any).picture?.data?.url) 
-              return (profile as any).picture.data.url;
-            return null;
-          })();
-
+  events: {
+    async signIn({ user, account }) {
+      if (account && user.email) {
+        try {
+          await dbConnect();
+          const existingUser = await User.findOne({ email: user.email });
+          
           if (!existingUser) {
             await User.create({
               email: user.email,
-              name: user.name || profile.name || '',
-              image: imageUrl,
+              name: user.name || '',
+              image: user.image || null,
               provider: account.provider,
               providerId: account.providerAccountId,
               bio: '',
             });
-          } else {
-            // Update user info if they don't have an image
-            if (!existingUser.image && imageUrl) {
-              existingUser.image = imageUrl;
-              await existingUser.save();
-            }
           }
+        } catch (error) {
+          console.error('SignIn event error:', error);
         }
-        return true;
-      } catch (error) {
-        console.error('SignIn callback error:', error);
-        return false;
       }
     },
+  },
+  callbacks: {
     async session({ session, token, user }: any) {
-      if (session.user) {
-        // Fetch user data from database
+      if (session.user && user) {
         try {
           await dbConnect();
           const dbUser = await User.findOne({ email: session.user.email });
@@ -108,6 +106,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: 'database',
   },
+  debug: process.env.NODE_ENV === 'development',
 });
 
 declare global {
