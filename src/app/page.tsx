@@ -1,5 +1,3 @@
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import CategoryGrid from '@/components/CategoryGrid';
 import TipCard from '@/components/TipCard';
 import { ExpertTip } from '@/types';
@@ -154,9 +152,7 @@ const FEATURED_TIPS: ExpertTip[] = [
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-white">
-      <Header />
-      
+    <>
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 text-center">
@@ -204,7 +200,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gray-900 text-white py-16 mb-0">
+      <section className="bg-gray-900 text-white py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">Join Our Expert Community</h2>
           <p className="text-gray-300 mb-8 text-lg">
@@ -215,8 +211,6 @@ export default function Home() {
           </button>
         </div>
       </section>
-
-      <Footer />
-    </div>
+    </>
   );
 }
