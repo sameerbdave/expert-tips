@@ -1,38 +1,20 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import FacebookProvider from 'next-auth/providers/facebook';
-import { JWT } from 'next-auth/jwt';
-import { Session } from 'next-auth';
-
-// Build providers array with only configured providers
-const providers: any[] = [];
-
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && 
-    !process.env.GOOGLE_CLIENT_ID.includes('your_') &&
-    !process.env.GOOGLE_CLIENT_SECRET.includes('your_')) {
-  providers.push(
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      allowDangerousEmailAccountLinking: true,
-    })
-  );
-}
-
-if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET &&
-    !process.env.FACEBOOK_APP_ID.includes('your_') &&
-    !process.env.FACEBOOK_APP_SECRET.includes('your_')) {
-  providers.push(
-    FacebookProvider({
-      clientId: process.env.FACEBOOK_APP_ID,
-      clientSecret: process.env.FACEBOOK_APP_SECRET,
-      allowDangerousEmailAccountLinking: true,
-    })
-  );
-}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: providers.length > 0 ? providers : [],
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      allowDangerousEmailAccountLinking: true,
+    }),
+    FacebookProvider({
+      clientId: process.env.FACEBOOK_APP_ID || '',
+      clientSecret: process.env.FACEBOOK_APP_SECRET || '',
+      allowDangerousEmailAccountLinking: true,
+    }),
+  ],
   pages: {
     signIn: '/login',
     error: '/login?error=auth_error',
@@ -44,7 +26,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.email = user.email;
         token.name = user.name;
         token.image = user.image;
-        token.provider = account?.provider;
+        if (account) {
+          token.provider = account.provider;
+        }
       }
       return token;
     },
